@@ -3,6 +3,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Objects;
 
+import exception.UserInputException;
 import org.apache.log4j.Logger;
 
 public class Server {
@@ -12,18 +13,15 @@ public class Server {
     private BufferedWriter out;
     private static final Logger LOG = Logger.getLogger(Server.class);
 
-    public Server() {
-    }
-
     public void run() {
         try {
             try {
                 server = new ServerSocket(4004);
                 LOG.info("new server is running and waiting for a connection");
                 clientSocket = server.accept();
+                LOG.info("clientside " + clientSocket.getInetAddress() + " connected");
 
                 try {
-                    LOG.info("clientside " + clientSocket.getInetAddress() + " connected");
                     in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                     out = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
                     LOG.info("server read and write threads started");
@@ -31,20 +29,26 @@ public class Server {
                     String word = in.readLine();
                     LOG.info("received message: " + word);
 
-                    //there may be calculations
-
-                    out.write("Привет, это Сервер! Подтверждаю, вы написали : " + word + "\n");
+                    out.write(new Calc().run(word) + "\n");
                     out.flush();
+                    LOG.info("the result is sent to the client");
+
+                } catch (UserInputException e) {
+                    e.printStackTrace();
+                    LOG.info("calculation problem - exception");
+
                 } finally {
                     in.close();
                     out.close();
                     LOG.info("server read and write streams closed");
                 }
+
             } finally {
                 clientSocket.close();
                 server.close();
                 LOG.info("socket and server closed");
             }
+
         } catch (IOException e) {
             LOG.info("server error!");
         }
